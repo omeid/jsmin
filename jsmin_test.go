@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omeid/JSMin"
+	"github.com/omeid/jsmin"
 )
 
 var before = strings.NewReader(`
