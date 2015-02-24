@@ -42,7 +42,7 @@ func (c *Compiler) Compile() error {
 	}
 	for c.a != scanner.EOF {
 		switch c.a {
-		case ' ':
+		case ' ', '\t':
 			if alphanum(c.b) {
 				c.action1()
 			} else {
@@ -52,7 +52,7 @@ func (c *Compiler) Compile() error {
 			switch c.b {
 			case '{', '[', '(', '+', '-', '!', '~':
 				c.action1()
-			case ' ':
+			case ' ', '\t':
 				c.action3()
 			default:
 				if alphanum(c.b) {
@@ -63,7 +63,7 @@ func (c *Compiler) Compile() error {
 			}
 		default:
 			switch c.b {
-			case ' ':
+			case ' ', '\t':
 				if alphanum(c.a) {
 					c.action1()
 				} else {
@@ -96,7 +96,7 @@ func (c *Compiler) next() (rune, error) {
 			for next = c.s.Next(); next != '\n'; next = c.s.Next() {
 			}
 		case '*':
-			for next = c.s.Next(); next != ' '; next = c.s.Next() {
+			for next = c.s.Next(); !isspace(next); next = c.s.Next() {
 				switch c.s.Next() {
 				case '*':
 					if c.s.Peek() == '/' {
@@ -116,8 +116,10 @@ func (c *Compiler) next() (rune, error) {
 }
 
 func (c *Compiler) action1() error {
-	c.o.WriteRune(c.a)
-	if (c.y == '\n' || c.y == ' ') &&
+	if c.o.Len() > 0 || !isspace(c.a) {
+		c.o.WriteRune(c.a)
+	}
+	if (c.y == '\n' || isspace(c.y)) &&
 		(c.a == '+' || c.a == '-' || c.a == '*' || c.a == '/') &&
 		(c.b == '+' || c.b == '-' || c.b == '*' || c.b == '/') {
 		c.o.WriteRune(c.y)
@@ -167,7 +169,9 @@ func (c *Compiler) action3() error {
 		c.a == '?' || c.a == '+' || c.a == '-' || c.a == '~' ||
 		c.a == '*' || c.a == '/' || c.a == '{' || c.a == '\n') {
 
-		c.o.WriteRune(c.a)
+		if c.o.Len() > 0 || !isspace(c.a) {
+			c.o.WriteRune(c.a)
+		}
 		c.o.WriteRune(c.b)
 
 		for {
@@ -210,6 +214,10 @@ func (c *Compiler) action3() error {
 		}
 	}
 	return nil
+}
+
+func isspace(c rune) bool {
+	return c == ' ' || c == '\t' || c == '\n' || c == '\r'
 }
 
 func alphanum(c rune) bool {
