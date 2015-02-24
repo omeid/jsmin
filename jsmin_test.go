@@ -1,55 +1,46 @@
 package jsmin_test
 
 import (
+	"bytes"
 	"io/ioutil"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/omeid/jsmin"
 )
 
-var before = strings.NewReader(`
-// (c) 2001 Douglas Crockford
-// 2001 June 3
-// is
-// The -is- object is used to identify the browser. Every browser edition
-// identifies itself, but there is no standard way of doing it, and some of
-// the identification is deceptive. This is because the authors of web
-// browsers are liars. For example, Microsoft's IE browsers claim to be
-// Mozilla 4. Netscape 6 claims to be version 5.
-var is = {
-ie: navigator.appName == 'Microsoft Internet Explorer',
-java: navigator.javaEnabled(),
-ns: navigator.appName == 'Netscape',
-ua: navigator.userAgent.toLowerCase(),
-version: parseFloat(navigator.appVersion.substr(21)) ||
-parseFloat(navigator.appVersion),
-win: navigator.platform == 'Win32'
-}
-is.mac = is.ua.indexOf('mac') &gt;= 0;
-if (is.ua.indexOf('opera') &gt;= 0) {
-is.ie = is.ns = false;
-is.opera = true;
-}
-if (is.ua.indexOf('gecko') &gt;= 0) {
-is.ie = is.ns = false;
-is.gecko = true;
-}`)
-
-const after = `
-var is={ie:navigator.appName=='Microsoft Internet Explorer',java:navigator.javaEnabled(),ns:navigator.appName=='Netscape',ua:navigator.userAgent.toLowerCase(),version:parseFloat(navigator.appVersion.substr(21))||parseFloat(navigator.appVersion),win:navigator.platform=='Win32'}
-is.mac=is.ua.indexOf('mac')&gt;=0;if(is.ua.indexOf('opera')&gt;=0){is.ie=is.ns=false;is.opera=true;}
-if(is.ua.indexOf('gecko')&gt;=0){is.ie=is.ns=false;is.gecko=true;}`
-
 func TestMinify(t *testing.T) {
-
-	reader, err := jsmin.Minify(before)
+	files, err := ioutil.ReadDir(`testdata`)
 	if err != nil {
 		t.Fatal(err)
 	}
+	for _, file := range files {
+		name := filepath.Join("testdata", file.Name())
+		if !strings.HasSuffix(name, ".before") {
+			continue
+		}
+		before, err := ioutil.ReadFile(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		after, err := ioutil.ReadFile(name[:len(name)-7] + ".after")
+		if err != nil {
+			t.Fatal(err)
+		}
+		reader, err := jsmin.Minify(bytes.NewReader(before))
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	out, _ := ioutil.ReadAll(reader)
-	if string(out) != after {
-		t.Fatalf("Whops. We failed.\nOUTPUT:\n%s\n", out)
+		out, _ := ioutil.ReadAll(reader)
+		if string(out) != string(after) {
+			println("---------------")
+			println(string(out))
+			println("---------------")
+			println(string(after))
+			println("---------------")
+			t.Fatal("Whops. We failed.")
+		}
 	}
 }
